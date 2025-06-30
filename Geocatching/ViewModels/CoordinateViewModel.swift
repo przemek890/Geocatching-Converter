@@ -1,12 +1,6 @@
-//
-//  CoordinateViewModel.swift
-//  Geocatching
-//
-//  Created by przemek899 on 29/06/2025.
-//
-
 import Foundation
 import SwiftUI
+import Combine
 
 @MainActor
 class CoordinateViewModel: ObservableObject {
@@ -19,11 +13,31 @@ class CoordinateViewModel: ObservableObject {
     
     private let converter = CoordinateConverter()
     
-    init() {
-        convert()
-    }
+    @AppStorage("inputLatitude") private var storedLatitude: String = ""
+    @AppStorage("inputLongitude") private var storedLongitude: String = ""
     
-    // MARK: - Public Methods
+    private var cancellables = Set<AnyCancellable>()
+    
+    init() {
+        if let lat = Coordinate.fromString(storedLatitude, direction: .north) {
+            latitude = lat
+        }
+        if let lon = Coordinate.fromString(storedLongitude, direction: .east) {
+            longitude = lon
+        }
+        convert()
+        
+        $latitude
+            .sink { [weak self] coord in
+                self?.storedLatitude = coord.toString()
+            }
+            .store(in: &cancellables)
+        $longitude
+            .sink { [weak self] coord in
+                self?.storedLongitude = coord.toString()
+            }
+            .store(in: &cancellables)
+    }
     
     func convert() {
         let result = converter.convert(

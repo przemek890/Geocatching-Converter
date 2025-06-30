@@ -1,10 +1,3 @@
-//
-//  CoordinateInputView.swift
-//  Geocatching
-//
-//  Created by przemek899 on 29/06/2025.
-//
-
 import SwiftUI
 
 struct CoordinateInputView: View {
@@ -12,6 +5,7 @@ struct CoordinateInputView: View {
     let format: CoordinateFormat
     let isLatitude: Bool
     let onFieldComplete: () -> Void
+    var isFocused: FocusState<Bool>.Binding?
     
     @State private var degreesText: String = ""
     @State private var decimalText: String = ""
@@ -27,37 +21,33 @@ struct CoordinateInputView: View {
     
     var body: some View {
         HStack(spacing: 6) {
-                // Direction picker
-                Menu {
-                    ForEach(isLatitude ? [CoordinateDirection.north, .south] : [.east, .west], id: \.self) { direction in
-                        Button(direction.rawValue) {
-                            coordinate.direction = direction
-                        }
+            Menu {
+                ForEach(isLatitude ? [CoordinateDirection.north, .south] : [.east, .west], id: \.self) { direction in
+                    Button(direction.rawValue) {
+                        coordinate.direction = direction
                     }
-                } label: {
-                    Text(coordinate.direction.rawValue)
-                        .frame(width: 25, height: 32)
-                        .background(Color.secondary.opacity(0.2))
-                        .cornerRadius(6)
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
                 }
-                
-                switch format {
-                case .dd:
-                    ddInputFields()
-                case .ddm:
-                    ddmInputFields()
-                case .dms:
-                    dmsInputFields()
-                }
-                
-                Spacer()
+            } label: {
+                Text(coordinate.direction.rawValue)
+                    .frame(width: 25, height: 32)
+                    .background(Color.secondary.opacity(0.2))
+                    .cornerRadius(6)
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+            }
+            
+            switch format {
+            case .dd:
+                ddInputFields()
+            case .ddm:
+                ddmInputFields()
+            case .dms:
+                dmsInputFields()
+            }
+            
+            Spacer()
         }
         .onAppear {
             updateTextFields()
-            if isLatitude {
-                focusedField = .degrees
-            }
         }
         .onChange(of: format) { _ in
             updateTextFields()
@@ -66,7 +56,6 @@ struct CoordinateInputView: View {
     
     @ViewBuilder
     private func ddInputFields() -> some View {
-        // DD format: N XX.XXXXX (separate fields for degrees and decimal)
         HStack(spacing: 3) {
             TextField(isLatitude ? "00" : "000", text: $degreesText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -82,8 +71,12 @@ struct CoordinateInputView: View {
                     }
                     updateCoordinateFromDD()
                 }
+                .onChange(of: isFocused?.wrappedValue ?? false) { shouldFocus in
+                    if shouldFocus && isLatitude {
+                        focusedField = .degrees
+                    }
+                }
                 .onSubmit {
-                    // Auto-fill zeros when manually moving to next field
                     let degrees = Int(degreesText) ?? 0
                     let maxDigits = isLatitude ? 2 : 3
                     if degreesText.count < maxDigits {
@@ -114,7 +107,6 @@ struct CoordinateInputView: View {
     
     @ViewBuilder
     private func ddmInputFields() -> some View {
-        // DDM format: N XX XX.XXX
         HStack(spacing: 3) {
             TextField(isLatitude ? "00" : "000", text: $degreesText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -130,8 +122,12 @@ struct CoordinateInputView: View {
                     }
                     updateCoordinateFromDDM()
                 }
+                .onChange(of: isFocused?.wrappedValue ?? false) { shouldFocus in
+                    if shouldFocus && isLatitude {
+                        focusedField = .degrees
+                    }
+                }
                 .onSubmit {
-                    // Auto-fill zeros when manually moving to next field
                     let degrees = Int(degreesText) ?? 0
                     let maxDigits = isLatitude ? 2 : 3
                     if degreesText.count < maxDigits {
@@ -148,7 +144,6 @@ struct CoordinateInputView: View {
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .decimalMinutes)
                 .onChange(of: decimalMinutesText) { newValue in
-                    // Auto-add decimal point if user types numbers without it
                     if !newValue.contains(".") && newValue.count > 2 {
                         let firstTwo = String(newValue.prefix(2))
                         let rest = String(newValue.dropFirst(2))
@@ -164,7 +159,6 @@ struct CoordinateInputView: View {
     
     @ViewBuilder
     private func dmsInputFields() -> some View {
-        // DMS format: N XX XX XX
         HStack(spacing: 3) {
             TextField(isLatitude ? "00" : "000", text: $degreesText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -180,8 +174,12 @@ struct CoordinateInputView: View {
                     }
                     updateCoordinateFromDMS()
                 }
+                .onChange(of: isFocused?.wrappedValue ?? false) { shouldFocus in
+                    if shouldFocus && isLatitude {
+                        focusedField = .degrees
+                    }
+                }
                 .onSubmit {
-                    // Auto-fill zeros when manually moving to next field
                     let degrees = Int(degreesText) ?? 0
                     let maxDigits = isLatitude ? 2 : 3
                     if degreesText.count < maxDigits {
@@ -204,7 +202,6 @@ struct CoordinateInputView: View {
                     updateCoordinateFromDMS()
                 }
                 .onSubmit {
-                    // Auto-fill zeros when manually moving to next field
                     let minutes = Int(minutesText) ?? 0
                     if minutesText.count < 2 {
                         minutesText = String(format: "%02d", minutes)
@@ -223,7 +220,6 @@ struct CoordinateInputView: View {
                     updateCoordinateFromDMS()
                 }
                 .onSubmit {
-                    // Auto-fill zeros when manually moving to next field
                     let seconds = Int(secondsText) ?? 0
                     if secondsText.count < 2 {
                         secondsText = String(format: "%02d", seconds)
@@ -283,5 +279,19 @@ struct CoordinateInputView: View {
         coordinate.seconds = Int(secondsText) ?? 0
         coordinate.decimalMinutes = Double(coordinate.minutes) + Double(coordinate.seconds) / 60.0
         coordinate.decimalDegrees = Double(coordinate.degrees) + coordinate.decimalMinutes / 60.0
+    }
+    
+    func clearFields() {
+        degreesText = ""
+        decimalText = ""
+        minutesText = ""
+        decimalMinutesText = ""
+        secondsText = ""
+        coordinate.degrees = 0
+        coordinate.decimalDegrees = 0
+        coordinate.minutes = 0
+        coordinate.seconds = 0
+        coordinate.decimalMinutes = 0
+        coordinate.direction = isLatitude ? .north : .east
     }
 }
