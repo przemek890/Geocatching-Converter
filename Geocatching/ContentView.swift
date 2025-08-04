@@ -16,7 +16,7 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            LockView(alphabetViewModel: alphabetViewModel)
+            LockView(alphabetViewModel: alphabetViewModel, settingsViewModel: settingsViewModel)
                 .tabItem {
                     Image(systemName: "lock.fill")
                     Text("Lock")

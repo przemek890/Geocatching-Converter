@@ -11,6 +11,7 @@ struct CompassView: View {
     @FocusState private var focusedIndex: Int?
     @State private var isCompassActive: Bool = true
     @State private var refreshToggle = false
+    @State private var showingClearConfirmation = false
 
     private var azimuthCode: String {
         var code = ""
@@ -124,7 +125,9 @@ struct CompassView: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                             .padding(.bottom, 10)
-                        Button(action: resetInputs) {
+                        Button(action: {
+                            showingClearConfirmation = true
+                        }) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.headline)
                                 .foregroundColor(.blue)
@@ -261,6 +264,16 @@ struct CompassView: View {
             }
         }
         .ignoresSafeArea(.keyboard)
+        .alert(isPresented: $showingClearConfirmation) {
+            Alert(
+                title: Text("Clear all inputs?"),
+                message: Text("All entered data will be cleared."),
+                primaryButton: .destructive(Text("Yes")) {
+                    resetInputs()
+                },
+                secondaryButton: .cancel(Text("Cancel"))
+            )
+        }
     }
 
     private func moveToNextField(from currentIndex: Int, isDistance: Bool) {

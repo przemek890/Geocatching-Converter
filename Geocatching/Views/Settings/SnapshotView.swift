@@ -54,7 +54,7 @@ struct SnapshotsView: View {
                     }
                 }
             }
-            .alert("Delete Snapshot", isPresented: $showingDeleteAlert) {
+            .alert("Delete Snapshot '\(selectedSnapshot?.name ?? "")'", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete", role: .destructive) {
                     if let snapshot = selectedSnapshot {

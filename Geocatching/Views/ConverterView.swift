@@ -11,6 +11,7 @@ struct ConverterView: View {
 
     @State private var latitudeInputID = UUID()
     @State private var longitudeInputID = UUID()
+    @State private var showingClearConfirmation = false
 
     private var alphabetLetters: [String] {
         let allLetters = alphabetViewModel.currentAlphabet
@@ -35,7 +36,7 @@ struct ConverterView: View {
                         HStack {
                             Spacer()
                             Button(action: {
-                                clearFields()
+                                showingClearConfirmation = true
                             }) {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.headline)
@@ -63,6 +64,16 @@ struct ConverterView: View {
             .onTapGesture {
                 hideKeyboard()
             }
+        }
+        .alert(isPresented: $showingClearConfirmation) {
+            Alert(
+                title: Text("Clear all inputs?"),
+                message: Text("All entered data will be cleared."),
+                primaryButton: .destructive(Text("Yes")) {
+                    clearFields()
+                },
+                secondaryButton: .cancel(Text("Cancel"))
+            )
         }
         .onAppear {
             alphabetViewModel.loadLetterData()

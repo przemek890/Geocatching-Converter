@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LockView: View {
     @ObservedObject var alphabetViewModel: AlphabetViewModel
-    @StateObject private var settingsViewModel = SettingsViewModel()
+    @ObservedObject var settingsViewModel: SettingsViewModel
 
     @FocusState private var focusedIndex: Int?
     @Environment(\.scenePhase) private var scenePhase
@@ -62,6 +62,7 @@ struct LockView: View {
             if settingsViewModel.lockEnteredLetters.count != lockDigits {
                 resetInputs()
             }
+            refreshToggle.toggle()
         }
         .onChange(of: lockDigits) { _ in
             resetInputs()
@@ -79,6 +80,9 @@ struct LockView: View {
                     refreshToggle.toggle()
                 }
             }
+        }
+        .onDisappear {
+            NotificationCenter.default.removeObserver(self, name: Notification.Name("LockDataChanged"), object: nil)
         }
     }
 
@@ -148,6 +152,7 @@ struct LockContentView: View {
     let updateLetter: (Int, String) -> Void
     let moveToNext: (Int) -> Void
     @Binding var refreshToggle: Bool
+    @State private var showingClearConfirmation = false
 
     var lockDigits: Int {
         settingsViewModel.lockDigits
@@ -178,7 +183,9 @@ struct LockContentView: View {
                 HStack {
                     Spacer()
 
-                    Button(action: clearAllInputs) {
+                    Button(action: {
+                        showingClearConfirmation = true
+                    }) {
                         Image(systemName: "arrow.clockwise")
                             .font(.headline)
                             .foregroundColor(.blue)
@@ -285,6 +292,16 @@ struct LockContentView: View {
             }
         }
         .id("lock-\(refreshToggle)")
+        .alert(isPresented: $showingClearConfirmation) {
+            Alert(
+                title: Text("Clear all inputs?"),
+                message: Text("All entered data will be cleared."),
+                primaryButton: .destructive(Text("Yes")) {
+                    clearAllInputs()
+                },
+                secondaryButton: .cancel(Text("Cancel"))
+            )
+        }
     }
 
     struct LetterInputCell: View {
