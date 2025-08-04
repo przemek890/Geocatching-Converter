@@ -1,10 +1,19 @@
 import SwiftUI
+import UIKit
+
+extension UIApplication {
+    func hideKeyboard() {
+        sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
 
 struct LetterCardView: View {
     let letter: String
     @Binding var number: String
     @Binding var imageData: Data?
     let onImageTap: (Bool) -> Void
+
+    @State private var didDismissKeyboard = false
 
     var body: some View {
         VStack(spacing: 10) {
@@ -22,7 +31,12 @@ struct LetterCardView: View {
                 .padding(.horizontal, 4)
 
             Button(action: {
-                onImageTap(imageData != nil)
+                if didDismissKeyboard {
+                    onImageTap(imageData != nil)
+                } else {
+                    UIApplication.shared.hideKeyboard()
+                    didDismissKeyboard = true
+                }
             }) {
                 if let imageData = imageData,
                    let uiImage = UIImage(data: imageData) {
@@ -70,8 +84,8 @@ struct LetterCardView: View {
         )
         .animation(.easeInOut, value: imageData != nil)
         .onTapGesture {
-            let hasImage = imageData != nil
-            onImageTap(hasImage)
+            UIApplication.shared.hideKeyboard()
+            didDismissKeyboard = false
         }
     }
 }

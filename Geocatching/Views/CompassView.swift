@@ -10,6 +10,7 @@ struct CompassView: View {
     @State private var distanceInputs: [String] = ["", "", ""]
     @FocusState private var focusedIndex: Int?
     @State private var isCompassActive: Bool = true
+    @State private var refreshToggle = false
 
     private var azimuthCode: String {
         var code = ""
@@ -23,7 +24,7 @@ struct CompassView: View {
                    !number.isEmpty {
                     code += number
                 } else {
-                    return "___"
+                    code += "_"
                 }
             }
         }
@@ -127,6 +128,7 @@ struct CompassView: View {
                             Image(systemName: "arrow.clockwise")
                                 .font(.headline)
                                 .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
                         }
                         .padding(.trailing, 20)
                     }

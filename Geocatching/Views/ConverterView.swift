@@ -25,8 +25,30 @@ struct ConverterView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
-                    headerSection
+                    ZStack {
+                        Text("Converter")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.top, 20)
+                            .padding(.bottom, 10)
+
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                clearFields()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.headline)
+                                    .foregroundColor(.blue)
+                                    .frame(width: 32, height: 32)
+                            }
+                            .padding(.trailing, 28)
+                        }
+                    }
+
                     Spacer().frame(height: 20)
+                    headerSection
+                    Spacer().frame(height: 12)
                     inputSection
                     Spacer().frame(height: 12)
                     outputSection
@@ -37,19 +59,7 @@ struct ConverterView: View {
             }
             .scrollDisabled(true)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        clearFields()
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(.blue)
-                    }
-                    .accessibilityLabel("Reset input coordinates")
-                }
-            }
-            .navigationBarHidden(false)
+            .navigationBarHidden(true)
             .onTapGesture {
                 hideKeyboard()
             }
@@ -93,6 +103,7 @@ struct ConverterView: View {
             CustomImageViewerView(
                 image: selectedImage,
                 letter: selectedLetter,
+                showTrashIcon: false,
                 onDelete: {
                     alphabetViewModel.letterImages[selectedLetter] = nil
                     alphabetViewModel.saveLetterData()

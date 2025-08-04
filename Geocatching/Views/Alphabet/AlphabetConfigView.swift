@@ -111,6 +111,7 @@ struct AlphabetConfigView: View {
                     CustomImageViewerView(
                         image: img,
                         letter: selectedLetter,
+                        showTrashIcon: true,
                         onDelete: {
                             letterImages[selectedLetter] = nil
                             activeSheet = nil

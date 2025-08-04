@@ -6,6 +6,7 @@ class AlphabetViewModel: ObservableObject {
     @AppStorage("selectedAlphabet") var selectedAlphabet = "english"
     @Published var letterNumbers: [String: String] = [:]
     @Published var letterImages: [String: Data] = [:]
+    private var isLoadingFromSnapshot = false
     
     var currentAlphabet: [String] {
         Alphabets.getCurrent(for: selectedAlphabet)
@@ -16,6 +17,8 @@ class AlphabetViewModel: ObservableObject {
     }
     
     func loadLetterData() {
+        if isLoadingFromSnapshot { return }
+        
         let key = "letterData_\(selectedAlphabet)"
         if let numbersData = UserDefaults.standard.data(forKey: "\(key)_numbers"),
            let numbers = try? JSONDecoder().decode([String: String].self, from: numbersData) {
@@ -38,6 +41,8 @@ class AlphabetViewModel: ObservableObject {
     }
     
     func saveLetterData() {
+        if isLoadingFromSnapshot { return }
+
         let key = "letterData_\(selectedAlphabet)"
         if let numbersData = try? JSONEncoder().encode(letterNumbers) {
             UserDefaults.standard.set(numbersData, forKey: "\(key)_numbers")
@@ -45,6 +50,14 @@ class AlphabetViewModel: ObservableObject {
         if let imagesData = try? JSONEncoder().encode(letterImages) {
             UserDefaults.standard.set(imagesData, forKey: "\(key)_images")
         }
+    }
+    
+    func loadFromSnapshot(letterNumbers: [String: String], letterImages: [String: Data], alphabet: String) {
+        isLoadingFromSnapshot = true
+        self.selectedAlphabet = alphabet
+        self.letterNumbers = letterNumbers
+        self.letterImages = letterImages
+        isLoadingFromSnapshot = false
     }
     
     func resetAllLetters() {

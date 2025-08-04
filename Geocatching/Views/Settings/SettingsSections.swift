@@ -7,8 +7,9 @@ struct AlphabetConfigItem: Identifiable {
 
 struct AlphabetSettingsSection: View {
     @ObservedObject var alphabetViewModel: AlphabetViewModel
+    @ObservedObject var settingsViewModel: SettingsViewModel
+    @ObservedObject var coordinateViewModel: CoordinateViewModel
     @State private var alphabetConfigItem: AlphabetConfigItem? = nil
-    @State private var showingResetAlert = false
     @State private var hasAppeared = false
 
     var body: some View {
@@ -37,20 +38,6 @@ struct AlphabetSettingsSection: View {
                 }
             }
             .padding(.vertical, 4)
-
-            Button(action: {
-                showingResetAlert = true
-            }) {
-                HStack {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
-                        .frame(width: 24)
-                        .font(.system(size: 16))
-                    Text("Reset")
-                        .foregroundColor(.red)
-                    Spacer()
-                }
-            }
         }
         .onAppear {
             hasAppeared = true
@@ -85,35 +72,52 @@ struct AlphabetSettingsSection: View {
                 }
             }
         }
-        .alert("Reset All Letters", isPresented: $showingResetAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reset", role: .destructive) {
-                alphabetViewModel.resetAllLetters()
-            }
-        } message: {
-            Text("Are you sure you want to delete all assigned numbers and photos? This action cannot be undone.")
-        }
     }
 }
 
 struct GeneralSettingsSection: View {
-    @ObservedObject var viewModel: SettingsViewModel
+    @ObservedObject var settingsViewModel: SettingsViewModel
+    @ObservedObject var alphabetViewModel: AlphabetViewModel
+    @ObservedObject var coordinateViewModel: CoordinateViewModel
+    @State private var showingSnapshotsView = false
 
     var body: some View {
         Section(header: Text("General Settings")) {
             HStack {
-                Image(systemName: viewModel.isDarkMode ? "moon.fill" : "sun.max.fill")
-                    .foregroundColor(viewModel.isDarkMode ? .blue : .orange)
+                Image(systemName: settingsViewModel.isDarkMode ? "moon.fill" : "sun.max.fill")
+                    .foregroundColor(settingsViewModel.isDarkMode ? .blue : .orange)
                     .frame(width: 24)
                     .font(.system(size: 16))
                 Text("Dark Mode")
                     .font(.body)
                 Spacer()
-                Toggle("", isOn: $viewModel.isDarkMode)
+                Toggle("", isOn: $settingsViewModel.isDarkMode)
             }
             .padding(.vertical, 4)
 
             NotesSettingsSection()
+            Button {
+                showingSnapshotsView = true
+            } label: {
+                HStack {
+                    Image(systemName: "camera.fill")
+                        .foregroundColor(.blue)
+                        .frame(width: 24)
+                        .font(.system(size: 16))
+                    Text("Manage Snapshots")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 14))
+                }
+            }
+            .sheet(isPresented: $showingSnapshotsView) {
+                SnapshotsView(
+                    settingsViewModel: settingsViewModel,
+                    alphabetViewModel: alphabetViewModel,
+                    coordinateViewModel: coordinateViewModel
+                )
+            }
         }
     }
 }
@@ -225,7 +229,7 @@ struct AppInfoSection: View {
     var body: some View {
         Section {
             VStack(spacing: 0) {
-                Text("Version 1.0")
+                Text("Version 1.1.0")
                     .font(.caption)
                     .foregroundColor(.secondary.opacity(0.7))
             }

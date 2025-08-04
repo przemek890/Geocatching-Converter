@@ -3,6 +3,7 @@ import SwiftUI
 struct CustomImageViewerView: View {
     let image: UIImage?
     let letter: String
+    let showTrashIcon: Bool
     let onDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -53,12 +54,14 @@ struct CustomImageViewerView: View {
                             .foregroundColor(.white)
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingDeleteAlert = true
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.white)
+                if showTrashIcon { 
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            showingDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.white)
+                        }
                     }
                 }
             }

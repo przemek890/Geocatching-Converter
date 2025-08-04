@@ -37,7 +37,8 @@ struct ContentView: View {
 
             SettingsView(
                 settingsViewModel: SettingsViewModel(),
-                alphabetViewModel: alphabetViewModel
+                alphabetViewModel: alphabetViewModel,
+                coordinateViewModel: CoordinateViewModel()
             )
                 .tabItem {
                     Image(systemName: "gearshape.fill")
