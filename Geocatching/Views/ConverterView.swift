@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct ConverterView: View {
-    @StateObject private var viewModel = CoordinateViewModel()
-    @StateObject private var alphabetViewModel = AlphabetViewModel()
     @ObservedObject var settingsViewModel: SettingsViewModel
+    @ObservedObject var coordinateViewModel: CoordinateViewModel
+    @StateObject private var alphabetViewModel = AlphabetViewModel()
 
     @State private var showingImageViewer = false
     @State private var selectedImage: UIImage? = nil
@@ -67,26 +67,20 @@ struct ConverterView: View {
         .onAppear {
             alphabetViewModel.loadLetterData()
             if let inputFormat = CoordinateFormat(rawValue: settingsViewModel.defaultInputFormat) {
-                viewModel.fromFormat = inputFormat
+                coordinateViewModel.fromFormat = inputFormat
             }
             if let outputFormat = CoordinateFormat(rawValue: settingsViewModel.defaultOutputFormat) {
-                viewModel.toFormat = outputFormat
+                coordinateViewModel.toFormat = outputFormat
             }
-            viewModel.convert()
+            coordinateViewModel.convert()
         }
-        .onChange(of: viewModel.fromFormat) { _ in
-            viewModel.resetInput()
+        .onChange(of: coordinateViewModel.fromFormat) { _ in
+            coordinateViewModel.convert()
         }
-        .onChange(of: viewModel.toFormat) { _ in
+        .onChange(of: coordinateViewModel.toFormat) { _ in
             withAnimation(.easeInOut(duration: 0.2)) {
-                viewModel.convert()
+                coordinateViewModel.convert()
             }
-        }
-        .onChange(of: viewModel.latitude) { _ in
-            viewModel.convert()
-        }
-        .onChange(of: viewModel.longitude) { _ in
-            viewModel.convert()
         }
         .onChange(of: alphabetViewModel.letterNumbers) { _ in }
         .onChange(of: alphabetViewModel.letterImages) { _ in }
@@ -187,7 +181,7 @@ struct ConverterView: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Spacer()
-                    Text("\(viewModel.fromFormat.rawValue)")
+                    Text("\(coordinateViewModel.fromFormat.rawValue)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 8)
@@ -217,20 +211,20 @@ struct ConverterView: View {
             }
             HStack(spacing: 12) {
                 CoordinateInputView(
-                    coordinate: $viewModel.latitude,
-                    format: viewModel.fromFormat,
+                    coordinate: $coordinateViewModel.latitude,
+                    format: coordinateViewModel.fromFormat,
                     isLatitude: true,
                     onFieldComplete: {
-                        viewModel.convert()
+                        coordinateViewModel.convert()
                     }
                 )
                 .id(latitudeInputID)
                 CoordinateInputView(
-                    coordinate: $viewModel.longitude,
-                    format: viewModel.fromFormat,
+                    coordinate: $coordinateViewModel.longitude,
+                    format: coordinateViewModel.fromFormat,
                     isLatitude: false,
                     onFieldComplete: {
-                        viewModel.convert()
+                        coordinateViewModel.convert()
                         hideKeyboard()
                     }
                 )
@@ -255,7 +249,7 @@ struct ConverterView: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Spacer()
-                    Text("\(viewModel.toFormat.rawValue)")
+                    Text("\(coordinateViewModel.toFormat.rawValue)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 8)
@@ -286,13 +280,13 @@ struct ConverterView: View {
             .padding(.horizontal, 20)
             HStack(spacing: 12) {
                 CoordinateDisplayView(
-                    coordinate: viewModel.convertedLatitude,
-                    format: viewModel.toFormat,
+                    coordinate: coordinateViewModel.convertedLatitude,
+                    format: coordinateViewModel.toFormat,
                     isLatitude: true
                 )
                 CoordinateDisplayView(
-                    coordinate: viewModel.convertedLongitude,
-                    format: viewModel.toFormat,
+                    coordinate: coordinateViewModel.convertedLongitude,
+                    format: coordinateViewModel.toFormat,
                     isLatitude: false
                 )
             }
@@ -310,7 +304,7 @@ struct ConverterView: View {
         HStack {
             Button(action: {
                 let service: MapService = settingsViewModel.defaultMapService == "google" ? .googleMaps : .appleMaps
-                if let url = viewModel.getMapURL(service: service) {
+                if let url = coordinateViewModel.getMapURL(service: service) {
                     UIApplication.shared.open(url)
                 }
             }) {
@@ -336,7 +330,7 @@ struct ConverterView: View {
             }
             .accessibilityLabel("Open in Maps")
             Button(action: {
-                let coordinates = viewModel.getFormattedCoordinatesString()
+                let coordinates = coordinateViewModel.getFormattedCoordinatesString()
                 shareToMessenger(coordinates: coordinates)
             }) {
                 HStack(spacing: 8) {
@@ -390,10 +384,8 @@ extension ConverterView {
     }
 
     private func clearFields() {
-        viewModel.latitude = Coordinate(direction: .north)
-        viewModel.longitude = Coordinate(direction: .east)
+        coordinateViewModel.resetInput()
         latitudeInputID = UUID()
         longitudeInputID = UUID()
-        viewModel.convert()
     }
 }

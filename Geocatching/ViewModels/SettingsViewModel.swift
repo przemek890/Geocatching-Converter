@@ -53,8 +53,6 @@ extension SettingsViewModel {
             let encodedLetterImages = alphabetViewModel.letterImages.mapValues { $0.base64EncodedString() }
             settings["letterImages"] = encodedLetterImages
             
-            settings["latitude"] = coordinateViewModel.latitude.toString()
-            settings["longitude"] = coordinateViewModel.longitude.toString()
             
             settings["compassLetterInputs"] = UserDefaults.standard.string(forKey: "compassLetterInputs") ?? ""
             settings["compassDistanceLetterInputs"] = UserDefaults.standard.string(forKey: "compassDistanceLetterInputs") ?? ""
@@ -97,12 +95,7 @@ extension SettingsViewModel {
         alphabetViewModel.letterNumbers = settings["letterNumbers"] as? [String: String] ?? [:]
         alphabetViewModel.letterImages = settings["letterImages"] as? [String: Data] ?? [:]
         
-        if let latitudeString = settings["latitude"] as? String {
-            coordinateViewModel.latitude = Coordinate.fromString(latitudeString, direction: .north) ?? Coordinate(direction: .north)
-        }
-        if let longitudeString = settings["longitude"] as? String {
-            coordinateViewModel.longitude = Coordinate.fromString(longitudeString, direction: .east) ?? Coordinate(direction: .east)
-        }
+        coordinateViewModel.resetInput()
     }
 }
 
@@ -135,12 +128,7 @@ extension SettingsViewModel {
             alphabetViewModel.letterImages = encodedLetterImages.compactMapValues { Data(base64Encoded: $0) }
         }
         
-        if let latitudeString = settings["latitude"] as? String {
-            coordinateViewModel.latitude = Coordinate.fromString(latitudeString, direction: .north) ?? Coordinate(direction: .north)
-        }
-        if let longitudeString = settings["longitude"] as? String {
-            coordinateViewModel.longitude = Coordinate.fromString(longitudeString, direction: .east) ?? Coordinate(direction: .east)
-        }
+        coordinateViewModel.resetInput()
         
         UserDefaults.standard.set(settings["compassLetterInputs"] as? String ?? "", forKey: "compassLetterInputs")
         UserDefaults.standard.set(settings["compassDistanceLetterInputs"] as? String ?? "", forKey: "compassDistanceLetterInputs")
@@ -161,14 +149,16 @@ extension SettingsViewModel {
         settings["lockEnteredLetters"] = lockEnteredLetters
         
         settings["letterNumbers"] = alphabetViewModel.letterNumbers
+        settings["selectedAlphabet"] = alphabetViewModel.selectedAlphabet
         
         let encodedLetterImages = alphabetViewModel.letterImages.mapValues { $0.base64EncodedString() }
         settings["letterImages"] = encodedLetterImages
         
-        Task { @MainActor in
-            settings["latitude"] = coordinateViewModel.latitude.toString()
-            settings["longitude"] = coordinateViewModel.longitude.toString()
-        }
+        
+        settings["compassLetterInputs"] = UserDefaults.standard.string(forKey: "compassLetterInputs") ?? ""
+        settings["compassDistanceLetterInputs"] = UserDefaults.standard.string(forKey: "compassDistanceLetterInputs") ?? ""
+        
+        settings["generalNote"] = UserDefaults.standard.string(forKey: "generalNote") ?? ""
         
         guard let data = try? JSONSerialization.data(withJSONObject: settings, options: []) else {
             fatalError("Failed to encode snapshot data")
@@ -191,16 +181,24 @@ extension SettingsViewModel {
         alphabetViewModel.selectedAlphabet = "english"
         alphabetViewModel.saveLetterData()
 
-        coordinateViewModel.latitude = Coordinate(direction: .north)
-        coordinateViewModel.longitude = Coordinate(direction: .east)
-        coordinateViewModel.convertedLatitude = Coordinate(direction: .north)
-        coordinateViewModel.convertedLongitude = Coordinate(direction: .east)
-        coordinateViewModel.fromFormat = .ddm
-        coordinateViewModel.toFormat = .dd
+        coordinateViewModel.resetInput()
 
         UserDefaults.standard.set("", forKey: "compassLetterInputs")
         UserDefaults.standard.set("", forKey: "compassDistanceLetterInputs")
 
         UserDefaults.standard.set("", forKey: "generalNote")
+    }
+    
+    func deleteSettings(withName name: String) {
+        var snapshots = getSnapshots()
+        snapshots.removeAll { $0.name == name }
+        
+        if let encodedSnapshots = try? JSONEncoder().encode(snapshots) {
+            UserDefaults.standard.set(encodedSnapshots, forKey: "settings_snapshots")
+        }
+        
+        UserDefaults.standard.removeObject(forKey: "history_\(name)")
+        
+        objectWillChange.send()
     }
 }

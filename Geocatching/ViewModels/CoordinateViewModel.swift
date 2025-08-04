@@ -4,39 +4,86 @@ import Combine
 
 @MainActor
 class CoordinateViewModel: ObservableObject {
-    @Published var latitude = Coordinate(direction: .north)
-    @Published var longitude = Coordinate(direction: .east)
+    @Published var latitude: Coordinate {
+        didSet {
+            saveCoordinates()
+            convert()
+        }
+    }
+    
+    @Published var longitude: Coordinate {
+        didSet {
+            saveCoordinates()
+            convert()
+        }
+    }
+    
     @Published var convertedLatitude = Coordinate(direction: .north)
     @Published var convertedLongitude = Coordinate(direction: .east)
-    @Published var fromFormat: CoordinateFormat = .ddm
-    @Published var toFormat: CoordinateFormat = .dd
+    
+    @Published var fromFormat: CoordinateFormat {
+        didSet {
+            saveFormat()
+            convert()
+        }
+    }
+    
+    @Published var toFormat: CoordinateFormat {
+        didSet {
+            saveFormat()
+            convert()
+        }
+    }
     
     private let converter = CoordinateConverter()
-    
-    @AppStorage("inputLatitude") private var storedLatitude: String = ""
-    @AppStorage("inputLongitude") private var storedLongitude: String = ""
-    
     private var cancellables = Set<AnyCancellable>()
     
+    private let latitudeKey = "savedLatitude"
+    private let longitudeKey = "savedLongitude"
+    private let fromFormatKey = "savedFromFormat"
+    private let toFormatKey = "savedToFormat"
+    
     init() {
-        if let lat = Coordinate.fromString(storedLatitude, direction: .north) {
-            latitude = lat
-        }
-        if let lon = Coordinate.fromString(storedLongitude, direction: .east) {
-            longitude = lon
-        }
-        convert()
+        self.latitude = Coordinate(direction: .north)
+        self.longitude = Coordinate(direction: .east)
+        self.fromFormat = .ddm
+        self.toFormat = .dd
         
-        $latitude
-            .sink { [weak self] coord in
-                self?.storedLatitude = coord.toString()
-            }
-            .store(in: &cancellables)
-        $longitude
-            .sink { [weak self] coord in
-                self?.storedLongitude = coord.toString()
-            }
-            .store(in: &cancellables)
+        loadSavedData()
+        
+        convert()
+    }
+    
+    private func loadSavedData() {
+        if let latString = UserDefaults.standard.string(forKey: latitudeKey),
+           let lat = Coordinate.fromString(latString, direction: .north) {
+            self.latitude = lat
+        }
+        
+        if let lonString = UserDefaults.standard.string(forKey: longitudeKey),
+           let lon = Coordinate.fromString(lonString, direction: .east) {
+            self.longitude = lon
+        }
+        
+        if let fromFormatString = UserDefaults.standard.string(forKey: fromFormatKey),
+           let format = CoordinateFormat(rawValue: fromFormatString) {
+            self.fromFormat = format
+        }
+        
+        if let toFormatString = UserDefaults.standard.string(forKey: toFormatKey),
+           let format = CoordinateFormat(rawValue: toFormatString) {
+            self.toFormat = format
+        }
+    }
+    
+    private func saveCoordinates() {
+        UserDefaults.standard.set(latitude.toString(), forKey: latitudeKey)
+        UserDefaults.standard.set(longitude.toString(), forKey: longitudeKey)
+    }
+    
+    private func saveFormat() {
+        UserDefaults.standard.set(fromFormat.rawValue, forKey: fromFormatKey)
+        UserDefaults.standard.set(toFormat.rawValue, forKey: toFormatKey)
     }
     
     func convert() {
@@ -57,6 +104,7 @@ class CoordinateViewModel: ObservableObject {
             longitude = Coordinate(direction: .east)
             convert()
         }
+        saveCoordinates()
     }
     
     func getFormattedCoordinatesString() -> String {

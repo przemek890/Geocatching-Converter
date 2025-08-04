@@ -43,6 +43,8 @@ struct HistorySettingsSection: View {
     @State private var newHistoryName: String = ""
     @State private var showingSaveAlert = false
     @State private var selectedHistoryName: String?
+    @State private var showingLoadAlert = false
+    @State private var showingDeleteAlert = false
 
     var body: some View {
         DisclosureGroup("History") {
@@ -50,25 +52,82 @@ struct HistorySettingsSection: View {
                 ForEach(settingsViewModel.getSavedSettingsNames(), id: \.self) { name in
                     HStack {
                         Text(name)
-                            .font(.body)
+                            .font(.system(.body, design: .rounded))
+                        
                         Spacer()
-                        Button("Load") {
-                            settingsViewModel.loadSettings(from: name, alphabetViewModel: alphabetViewModel, coordinateViewModel: coordinateViewModel)
+                        
+                        Button(action: {
+                            selectedHistoryName = name
+                            showingLoadAlert = true
+                        }) {
+                            Image(systemName: "arrow.down.circle")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        
+                        Button(action: {
+                            selectedHistoryName = name
+                            showingDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
                         }
                         .buttonStyle(BorderlessButtonStyle())
                     }
+                    .padding(.vertical, 4)
                 }
 
                 Divider()
                 
-                Button("Create Snapshot") {
+                Button(action: {
                     showingSaveAlert = true
+                }) {
+                    Label("Save Current Settings", systemImage: "square.and.arrow.down")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
                 .alert("Save Settings", isPresented: $showingSaveAlert) {
-                    TextField("Enter name", text: $newHistoryName)
-                    Button("Cancel", role: .cancel) {}
+                    TextField("Name", text: $newHistoryName)
+                    Button("Cancel", role: .cancel) { }
                     Button("Save") {
-                        settingsViewModel.saveCurrentSettings(as: newHistoryName, alphabetViewModel: alphabetViewModel, coordinateViewModel: coordinateViewModel)
+                        if !newHistoryName.isEmpty {
+                            settingsViewModel.saveCurrentSettings(
+                                as: newHistoryName,
+                                alphabetViewModel: alphabetViewModel,
+                                coordinateViewModel: coordinateViewModel
+                            )
+                            newHistoryName = ""
+                        }
+                    }
+                } message: {
+                    Text("Enter a name for these settings")
+                }
+                .alert("Load Settings", isPresented: $showingLoadAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Load") {
+                        if let name = selectedHistoryName {
+                            settingsViewModel.loadSettings(
+                                from: name,
+                                alphabetViewModel: alphabetViewModel,
+                                coordinateViewModel: coordinateViewModel
+                            )
+                        }
+                    }
+                } message: {
+                    if let name = selectedHistoryName {
+                        Text("Load settings from '\(name)'? This will replace your current settings.")
+                    }
+                }
+                .alert("Delete Settings", isPresented: $showingDeleteAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Delete", role: .destructive) {
+                        if let name = selectedHistoryName {
+                            settingsViewModel.deleteSettings(withName: name)
+                        }
+                    }
+                } message: {
+                    if let name = selectedHistoryName {
+                        Text("Are you sure you want to delete '\(name)'?")
                     }
                 }
             }

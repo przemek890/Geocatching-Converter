@@ -4,10 +4,12 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @AppStorage("isDarkMode") private var isDarkMode = false
     @StateObject private var alphabetViewModel = AlphabetViewModel()
+    @StateObject private var coordinateViewModel = CoordinateViewModel()
+    @StateObject private var settingsViewModel = SettingsViewModel()
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            ConverterView(settingsViewModel: SettingsViewModel())
+            ConverterView(settingsViewModel: settingsViewModel, coordinateViewModel: coordinateViewModel)
                 .tabItem {
                     Image(systemName: "location.viewfinder")
                     Text("Converter")
@@ -36,9 +38,9 @@ struct ContentView: View {
                 .tag(3)
 
             SettingsView(
-                settingsViewModel: SettingsViewModel(),
+                settingsViewModel: settingsViewModel,
                 alphabetViewModel: alphabetViewModel,
-                coordinateViewModel: CoordinateViewModel()
+                coordinateViewModel: coordinateViewModel
             )
                 .tabItem {
                     Image(systemName: "gearshape.fill")
@@ -49,7 +51,6 @@ struct ContentView: View {
         .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
-
 
 extension View {
     func hideKeyboard() {
