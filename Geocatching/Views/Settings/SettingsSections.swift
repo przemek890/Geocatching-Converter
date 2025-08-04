@@ -95,7 +95,6 @@ struct GeneralSettingsSection: View {
             }
             .padding(.vertical, 4)
 
-            NotesSettingsSection()
             Button {
                 showingSnapshotsView = true
             } label: {
@@ -111,6 +110,9 @@ struct GeneralSettingsSection: View {
                         .font(.system(size: 14))
                 }
             }
+            
+             NotesSettingsSection()
+
             .sheet(isPresented: $showingSnapshotsView) {
                 SnapshotsView(
                     settingsViewModel: settingsViewModel,
