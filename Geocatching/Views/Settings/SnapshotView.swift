@@ -398,6 +398,12 @@ func loadSnapshot(_ snapshot: SettingsSnapshot, settingsViewModel: SettingsViewM
         let lockEnteredLetters = settings["lockEnteredLetters"] as? String ?? ""
         settingsViewModel.lockEnteredLetters = lockEnteredLetters
         
+        NotificationCenter.default.post(
+            name: Notification.Name("LockDataChanged"),
+            object: nil,
+            userInfo: ["letters": lockEnteredLetters]
+        )
+        
         UserDefaults.standard.set(settings["compassLetterInputs"] as? String ?? "", forKey: "compassLetterInputs")
         UserDefaults.standard.set(settings["compassDistanceLetterInputs"] as? String ?? "", forKey: "compassDistanceLetterInputs")
         NotificationCenter.default.post(name: Notification.Name("CompassDataChanged"), object: nil)

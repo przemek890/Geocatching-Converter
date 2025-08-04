@@ -12,9 +12,8 @@ struct CoordinateInputView: View {
     @State private var minutesText: String = ""
     @State private var decimalMinutesText: String = ""
     @State private var secondsText: String = ""
-    @State private var forceRefresh: Bool = false
+    
     @FocusState private var focusedField: InputField?
-
     
     enum InputField {
         case degrees, decimal, minutes, decimalMinutes, seconds
@@ -49,21 +48,8 @@ struct CoordinateInputView: View {
         }
         .onAppear {
             updateTextFields()
-            
-            NotificationCenter.default.addObserver(
-                forName: Notification.Name("CoordinatesChanged"),
-                object: nil,
-                queue: .main
-            ) { _ in
-                updateTextFields()
-                forceRefresh.toggle()
-            }
         }
-        .id("coordinate-\(forceRefresh)-\(coordinate.direction.rawValue)-\(format.rawValue)") // Wymusi odświeżenie przy zmianie
         .onChange(of: format) { _ in
-            updateTextFields()
-        }
-        .onChange(of: coordinate) { _ in
             updateTextFields()
         }
     }
