@@ -5,7 +5,7 @@ struct CoordinateInputView: View {
     let format: CoordinateFormat
     let isLatitude: Bool
     let onFieldComplete: () -> Void
-    var isFocused: FocusState<Bool>.Binding?
+    let isFocused: Bool
     
     @State private var degreesText: String = ""
     @State private var decimalText: String = ""
@@ -71,7 +71,7 @@ struct CoordinateInputView: View {
                     }
                     updateCoordinateFromDD()
                 }
-                .onChange(of: isFocused?.wrappedValue ?? false) { shouldFocus in
+                .onChange(of: isFocused) { shouldFocus in
                     if shouldFocus && isLatitude {
                         focusedField = .degrees
                     }
@@ -122,7 +122,7 @@ struct CoordinateInputView: View {
                     }
                     updateCoordinateFromDDM()
                 }
-                .onChange(of: isFocused?.wrappedValue ?? false) { shouldFocus in
+                .onChange(of: isFocused) { shouldFocus in
                     if shouldFocus && isLatitude {
                         focusedField = .degrees
                     }
@@ -174,7 +174,7 @@ struct CoordinateInputView: View {
                     }
                     updateCoordinateFromDMS()
                 }
-                .onChange(of: isFocused?.wrappedValue ?? false) { shouldFocus in
+                .onChange(of: isFocused) { shouldFocus in
                     if shouldFocus && isLatitude {
                         focusedField = .degrees
                     }

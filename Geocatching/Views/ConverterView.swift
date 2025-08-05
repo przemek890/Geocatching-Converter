@@ -227,7 +227,8 @@ struct ConverterView: View {
                     isLatitude: true,
                     onFieldComplete: {
                         coordinateViewModel.convert()
-                    }
+                    },
+                    isFocused: false
                 )
                 .id(latitudeInputID)
                 CoordinateInputView(
@@ -237,7 +238,8 @@ struct ConverterView: View {
                     onFieldComplete: {
                         coordinateViewModel.convert()
                         hideKeyboard()
-                    }
+                    },
+                    isFocused: false
                 )
                 .id(longitudeInputID)
             }

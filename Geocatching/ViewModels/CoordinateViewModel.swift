@@ -4,16 +4,18 @@ import Combine
 
 @MainActor
 class CoordinateViewModel: ObservableObject {
+    private var saveTimer: Timer?
+    
     @Published var latitude: Coordinate {
         didSet {
-            saveCoordinates()
+            scheduleCoordinatesSave()
             convert()
         }
     }
     
     @Published var longitude: Coordinate {
         didSet {
-            saveCoordinates()
+            scheduleCoordinatesSave()
             convert()
         }
     }
@@ -49,36 +51,82 @@ class CoordinateViewModel: ObservableObject {
         self.fromFormat = .ddm
         self.toFormat = .dd
         
+        setupNotifications()
         loadSavedData()
-        
         convert()
     }
     
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationWillResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func applicationWillResignActive() {
+        saveTimer?.invalidate()
+        saveCoordinates()
+    }
+    
     private func loadSavedData() {
-        if let latString = UserDefaults.standard.string(forKey: latitudeKey),
+        let savedLat = UserDefaults.standard.string(forKey: latitudeKey)
+        let savedLon = UserDefaults.standard.string(forKey: longitudeKey)
+        let savedFromFormat = UserDefaults.standard.string(forKey: fromFormatKey)
+        let savedToFormat = UserDefaults.standard.string(forKey: toFormatKey)
+        
+        if let latString = savedLat,
            let lat = Coordinate.fromString(latString, direction: .north) {
             self.latitude = lat
+            self.convertedLatitude = lat
         }
         
-        if let lonString = UserDefaults.standard.string(forKey: longitudeKey),
+        if let lonString = savedLon,
            let lon = Coordinate.fromString(lonString, direction: .east) {
             self.longitude = lon
+            self.convertedLongitude = lon
         }
         
-        if let fromFormatString = UserDefaults.standard.string(forKey: fromFormatKey),
+        if let fromFormatString = savedFromFormat,
            let format = CoordinateFormat(rawValue: fromFormatString) {
             self.fromFormat = format
         }
         
-        if let toFormatString = UserDefaults.standard.string(forKey: toFormatKey),
+        if let toFormatString = savedToFormat,
            let format = CoordinateFormat(rawValue: toFormatString) {
             self.toFormat = format
         }
     }
     
+    private func scheduleCoordinatesSave() {
+        saveTimer?.invalidate()
+        saveTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            self?.saveCoordinates()
+        }
+    }
+    
     private func saveCoordinates() {
-        UserDefaults.standard.set(latitude.toString(), forKey: latitudeKey)
-        UserDefaults.standard.set(longitude.toString(), forKey: longitudeKey)
+        let latString = latitude.toString()
+        let lonString = longitude.toString()
+        
+        let existingLat = UserDefaults.standard.string(forKey: latitudeKey)
+        let existingLon = UserDefaults.standard.string(forKey: longitudeKey)
+        
+        if existingLat != latString {
+            UserDefaults.standard.set(latString, forKey: latitudeKey)
+        }
+        
+        if existingLon != lonString {
+            UserDefaults.standard.set(lonString, forKey: longitudeKey)
+        }
+        
+        if existingLat != latString || existingLon != lonString {
+            UserDefaults.standard.synchronize()
+            
+            let savedLat = UserDefaults.standard.string(forKey: latitudeKey)
+            let savedLon = UserDefaults.standard.string(forKey: longitudeKey)
+        }
     }
     
     private func saveFormat() {
