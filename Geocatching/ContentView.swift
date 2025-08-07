@@ -9,7 +9,7 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            ConverterView(settingsViewModel: settingsViewModel, coordinateViewModel: coordinateViewModel)
+            ConverterView(settingsViewModel: settingsViewModel, coordinateViewModel: coordinateViewModel, alphabetViewModel: alphabetViewModel)
                 .tabItem {
                     Image(systemName: "location.viewfinder")
                     Text("Converter")

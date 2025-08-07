@@ -3,15 +3,16 @@ import SwiftUI
 struct ConverterView: View {
     @ObservedObject var settingsViewModel: SettingsViewModel
     @ObservedObject var coordinateViewModel: CoordinateViewModel
-    @StateObject private var alphabetViewModel = AlphabetViewModel()
+    @ObservedObject var alphabetViewModel: AlphabetViewModel
 
-    @State private var selectedImage: UIImage? = nil
     @State private var selectedLetter: String = ""
 
     @State private var latitudeInputID = UUID()
     @State private var longitudeInputID = UUID()
     @State private var showingClearConfirmation = false
-    @State private var activeSheet: ActiveSheet?
+    @State private var imageCache: [String: UIImage] = [:]
+    @State private var showingImageViewer = false
+    @State private var viewRefreshTrigger = false
 
     private var alphabetLetters: [String] {
         let allLetters = alphabetViewModel.currentAlphabet
@@ -47,6 +48,7 @@ struct ConverterView: View {
             clearConfirmationAlert
         }
         .onAppear {
+            precacheImages()
             setupOnAppear()
         }
         .onChange(of: coordinateViewModel.fromFormat) { _ in
@@ -57,39 +59,30 @@ struct ConverterView: View {
                 coordinateViewModel.convert()
             }
         }
-        .sheet(item: $activeSheet) { item in
-            switch item {
-            case .imageViewer:
-                if let data = alphabetViewModel.letterImages[selectedLetter], let img = UIImage(data: data) {
-                    if img.size.width > 0 && img.size.height > 0 {
-                        CustomImageViewer(
-                            image: img,
-                            letter: selectedLetter,
-                            showTrashIcon: false,
-                            onDelete: {
-                                alphabetViewModel.letterImages[selectedLetter] = nil
-                                if let actualSnapshotID = settingsViewModel.currentSnapshotID {
-                                    alphabetViewModel.saveLetterData(forSnapshotID: actualSnapshotID)
-                                }
-                                activeSheet = nil
+        .sheet(isPresented: $showingImageViewer) {
+            Group {
+                if let cachedImage = imageCache[selectedLetter] {
+                    CustomImageViewer(
+                        image: cachedImage,
+                        letter: selectedLetter,
+                        showTrashIcon: false,
+                        onDelete: {
+                            alphabetViewModel.letterImages[selectedLetter] = nil
+                            imageCache.removeValue(forKey: selectedLetter)
+                            if let actualSnapshotID = settingsViewModel.currentSnapshotID {
+                                alphabetViewModel.saveLetterData(forSnapshotID: actualSnapshotID)
                             }
-                        )
-                    } else {
-                        VStack {
-                            Text("Invalid image for letter \(selectedLetter)")
-                            Button("Close") {
-                                activeSheet = nil
-                            }
-                            .padding()
+                            showingImageViewer = false
                         }
-                    }
+                    )
                 } else {
-                    Text("Unable to load image")
-                        .padding()
+                    ProgressView("Loading...")
+                        .onAppear {
+                            loadImageForLetter(selectedLetter)
+                        }
                 }
-            default:
-                EmptyView()
             }
+            .id(viewRefreshTrigger)
         }
     }
 }
@@ -220,10 +213,27 @@ private extension ConverterView {
 
 private extension ConverterView {
     
+    func precacheImages() {
+        for letter in alphabetLetters {
+            loadImageForLetter(letter)
+        }
+    }
+    
+    func loadImageForLetter(_ letter: String) {
+        if let data = alphabetViewModel.letterImages[letter],
+           let img = UIImage(data: data), 
+           img.size.width > 0 && img.size.height > 0 {
+            imageCache[letter] = img
+            viewRefreshTrigger.toggle()
+        }
+    }
+    
     func setupOnAppear() {
         if let aktualnySnapshotID = settingsViewModel.currentSnapshotID {
             alphabetViewModel.loadLetterData(forSnapshotID: aktualnySnapshotID)
-        
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                precacheImages()
+            }
         }
         
         if let inputFormat = CoordinateFormat(rawValue: settingsViewModel.defaultInputFormat) {
@@ -239,7 +249,10 @@ private extension ConverterView {
         selectedLetter = letter
         
         if alphabetViewModel.letterImages[letter] != nil {
-            activeSheet = .imageViewer
+            if imageCache[letter] == nil {
+                loadImageForLetter(letter)
+            }
+            showingImageViewer = true
         }
     }
     
