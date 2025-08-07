@@ -4,7 +4,7 @@ struct AppInfoSection: View {
     var body: some View {
         Section {
             VStack(spacing: 0) {
-                Text("Version 1.2.0")
+                Text("Version 1.2.1")
                     .font(.caption)
                     .foregroundColor(.secondary.opacity(0.7))
             }

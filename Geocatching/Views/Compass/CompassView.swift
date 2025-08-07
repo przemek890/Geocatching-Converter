@@ -5,11 +5,12 @@ struct CompassView: View {
     @StateObject private var viewModel: CompassViewModel
     @FocusState private var focusedIndex: Int?
     
-    init(alphabetViewModel: AlphabetViewModel) {
+    init(alphabetViewModel: AlphabetViewModel, settingsViewModel: SettingsViewModel) {
         let locationService = LocationService()
         _viewModel = StateObject(wrappedValue: CompassViewModel(
             alphabetViewModel: alphabetViewModel,
-            locationService: locationService
+            locationService: locationService,
+            settingsViewModel: settingsViewModel
         ))
     }
     

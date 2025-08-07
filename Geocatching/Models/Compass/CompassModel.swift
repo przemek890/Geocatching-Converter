@@ -2,9 +2,9 @@ import Foundation
 import CoreLocation
 
 struct CompassData {
-    let azimuth: Int?
-    let distance: Int?
-    let deviceHeading: Double
-    let azimuthText: String
-    let distanceText: String
+    var azimuth: Int?
+    var distance: Int?
+    var deviceHeading: Double
+    var azimuthText: String
+    var distanceText: String
 }

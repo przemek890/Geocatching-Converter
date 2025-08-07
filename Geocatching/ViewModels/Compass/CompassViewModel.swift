@@ -1,62 +1,44 @@
 import SwiftUI
-import Foundation
-import CoreLocation
 import Combine
+import Foundation
 
 class CompassViewModel: ObservableObject {
     @Published var letterInputs: [String] = ["", "", ""]
     @Published var distanceInputs: [String] = ["", "", ""]
     @Published var focusedIndex: Int? = nil
     @Published var showingClearConfirmation = false
-    @Published var compassData: CompassData = CompassData(
-        azimuth: nil,
-        distance: nil,
-        deviceHeading: 0.0,
-        azimuthText: "___",
-        distanceText: "___"
+    @Published var compassData = CompassData(
+        azimuth: nil, distance: nil, deviceHeading: 0,
+        azimuthText: "___", distanceText: "___"
     )
     
+    let alphabetViewModel: AlphabetViewModel
     let locationService: LocationService
-    private let alphabetViewModel: AlphabetViewModel
-    
-    @AppStorage("currentSnapshotID") private var currentSnapshotID: String?
-    
+    private let settingsViewModel: SettingsViewModel
     private var cancellables = Set<AnyCancellable>()
-    private var snapshotObserver: AnyCancellable?
-    private var isLoadingSnapshot = false
     
+    private var isLoadingSnapshot = false
     private var lastLoadedLetterInputs: [String] = ["", "", ""]
     private var lastLoadedDistanceInputs: [String] = ["", "", ""]
     
-    init(alphabetViewModel: AlphabetViewModel, locationService: LocationService) {
+    init(
+        alphabetViewModel: AlphabetViewModel,
+        locationService: LocationService,
+        settingsViewModel: SettingsViewModel
+    ) {
         self.alphabetViewModel = alphabetViewModel
         self.locationService = locationService
+        self.settingsViewModel = settingsViewModel
         
         setupBindings()
+        setupNotifications()
         loadInitialData()
-        
-        snapshotObserver = NotificationCenter.default.publisher(for: Notification.Name("CurrentSnapshotChanged"))
-            .sink { [weak self] notification in
-                if let userInfo = notification.userInfo,
-                   let newID = userInfo["snapshotID"] as? String,
-                   let letterInputs = userInfo["compassLetterInputs"] as? [String],
-                   let distanceInputs = userInfo["compassDistanceInputs"] as? [String] {
-                    self?.reloadDataForSnapshot(id: newID, letterInputs: letterInputs, distanceInputs: distanceInputs)
-                }
-            }
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleCompassDataReset),
-            name: Notification.Name("CompassDataReset"),
-            object: nil
-        )
     }
     
     private func setupBindings() {
         locationService.$heading
-            .sink { [weak self] _ in
-                self?.updateCompassData()
+            .sink { [weak self] heading in
+                self?.compassData.deviceHeading = heading
             }
             .store(in: &cancellables)
         
@@ -66,7 +48,7 @@ class CompassViewModel: ObservableObject {
                 guard let self = self else { return }
                 if self.isLoadingSnapshot { return }
                 if inputs == self.lastLoadedLetterInputs { return }
-                self.saveCurrentDataToSnapshot()
+                self.saveDataToSnapshot()
                 self.updateCompassData()
             }
             .store(in: &cancellables)
@@ -77,82 +59,164 @@ class CompassViewModel: ObservableObject {
                 guard let self = self else { return }
                 if self.isLoadingSnapshot { return }
                 if inputs == self.lastLoadedDistanceInputs { return }
-                self.saveCurrentDataToSnapshot()
+                self.saveDataToSnapshot()
                 self.updateCompassData()
             }
             .store(in: &cancellables)
     }
     
-    private func loadInitialData() {
-        alphabetViewModel.loadLetterData(forSnapshotID: currentSnapshotID ?? "")
-        if let _ = currentSnapshotID {}
-        focusedIndex = 0
-        updateCompassData()
+    private func setupNotifications() {
+        NotificationCenter.default.publisher(for: Notification.Name("CurrentSnapshotChanged"))
+            .compactMap { $0.userInfo?["snapshotID"] as? String }
+            .sink { [weak self] snapshotID in
+                self?.loadDataForSnapshot(snapshotID: snapshotID)
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: Notification.Name("CompassDataReset"))
+            .compactMap { $0.userInfo?["snapshotID"] as? String }
+            .sink { [weak self] snapshotID in
+                self?.resetInputs()
+                self?.saveDataToSnapshot(snapshotID: snapshotID)
+            }
+            .store(in: &cancellables)
     }
     
-    func toggleCompass() {
-        if locationService.isActive {
-            locationService.stopUpdatingHeading()
+    private func loadInitialData() {
+        if let currentID = settingsViewModel.currentSnapshotID {
+            loadDataForSnapshot(snapshotID: currentID)
         } else {
-            locationService.startUpdatingHeading()
+            resetInputs()
         }
-        objectWillChange.send()
+    }
+    
+    private func loadDataForSnapshot(snapshotID: String) {
+        isLoadingSnapshot = true
+        alphabetViewModel.loadLetterData(forSnapshotID: snapshotID)
+        
+        let letterKey = "compassLetterInputs_\(snapshotID)"
+        if let savedData = UserDefaults.standard.data(forKey: letterKey),
+           let savedLetters = try? JSONDecoder().decode([String].self, from: savedData) {
+            letterInputs = savedLetters
+        } else {
+            letterInputs = ["", "", ""]
+        }
+        
+        let distanceKey = "compassDistanceInputs_\(snapshotID)"
+        if let savedData = UserDefaults.standard.data(forKey: distanceKey),
+           let savedDistance = try? JSONDecoder().decode([String].self, from: savedData) {
+            distanceInputs = savedDistance
+        } else {
+            distanceInputs = ["", "", ""]
+        }
+        
+        lastLoadedLetterInputs = letterInputs
+        lastLoadedDistanceInputs = distanceInputs
+        focusedIndex = 0
+        updateCompassData()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.isLoadingSnapshot = false
+        }
+    }
+    
+    private func saveDataToSnapshot() {
+        guard let snapshotID = settingsViewModel.currentSnapshotID else { return }
+        saveDataToSnapshot(snapshotID: snapshotID)
+    }
+    
+    private func saveDataToSnapshot(snapshotID: String) {
+        let letterKey = "compassLetterInputs_\(snapshotID)"
+        if let encoded = try? JSONEncoder().encode(letterInputs) {
+            UserDefaults.standard.set(encoded, forKey: letterKey)
+        }
+        
+        let distanceKey = "compassDistanceInputs_\(snapshotID)"
+        if let encoded = try? JSONEncoder().encode(distanceInputs) {
+            UserDefaults.standard.set(encoded, forKey: distanceKey)
+        }
+        
+        lastLoadedLetterInputs = letterInputs
+        lastLoadedDistanceInputs = distanceInputs
     }
     
     func updateLetterInput(at index: Int, with value: String) {
+        guard index < letterInputs.count else { return }
         let filtered = value.uppercased().filter { $0.isLetter }
-        let singleChar = String(filtered.prefix(1))
-        
-        if !letterInputs[index].isEmpty && !singleChar.isEmpty {
-            letterInputs[index] = singleChar
-            moveToNextField(from: index, isDistance: false)
-        } else if singleChar.isEmpty {
-            letterInputs[index] = ""
-        } else {
-            letterInputs[index] = singleChar
-            moveToNextField(from: index, isDistance: false)
-        }
-        
-        if letterInputs != lastLoadedLetterInputs {
-            lastLoadedLetterInputs = letterInputs
+        letterInputs[index] = String(filtered.prefix(1))
+        if !filtered.isEmpty && index < letterInputs.count - 1 {
+            focusedIndex = index + 1
         }
     }
     
     func updateDistanceInput(at index: Int, with value: String) {
+        guard index < distanceInputs.count else { return }
         let filtered = value.uppercased().filter { $0.isLetter }
-        let singleChar = String(filtered.prefix(1))
-        
-        if !distanceInputs[index].isEmpty && !singleChar.isEmpty {
-            distanceInputs[index] = singleChar
-            moveToNextField(from: index, isDistance: true)
-        } else if singleChar.isEmpty {
-            distanceInputs[index] = ""
-        } else {
-            distanceInputs[index] = singleChar
-            moveToNextField(from: index, isDistance: true)
-        }
-        
-        if distanceInputs != lastLoadedDistanceInputs {
-            lastLoadedDistanceInputs = distanceInputs
+        distanceInputs[index] = String(filtered.prefix(1))
+        if !filtered.isEmpty {
+            let nextIndex = index - 1
+            if nextIndex >= 0 {
+                focusedIndex = nextIndex + 3
+            }
         }
     }
     
     func clearInputs() {
         letterInputs = ["", "", ""]
         distanceInputs = ["", "", ""]
-        focusedIndex = 0
-        lastLoadedLetterInputs = letterInputs
-        lastLoadedDistanceInputs = distanceInputs
-        saveCurrentDataToSnapshot()
+        focusedIndex = nil
+        updateCompassData()
+        if let snapshotID = settingsViewModel.currentSnapshotID {
+            saveDataToSnapshot(snapshotID: snapshotID)
+        }
+    }
+    
+    private func resetInputs() {
+        letterInputs = ["", "", ""]
+        distanceInputs = ["", "", ""]
+        focusedIndex = nil
         updateCompassData()
     }
     
-    func dismissFocus() {
-        focusedIndex = nil
+    private func updateCompassData() {
+        let azimuth = calculateAzimuth()
+        let distance = calculateDistance()
+        
+        compassData = CompassData(
+            azimuth: azimuth,
+            distance: distance,
+            deviceHeading: locationService.heading,
+            azimuthText: azimuth != nil ? "\(azimuth!)°" : "___",
+            distanceText: distance != nil ? "\(distance!)" : "___"
+        )
     }
     
-    func showClearConfirmation() {
-        showingClearConfirmation = true
+    func recalculateCompassData() {
+        updateCompassData()
+    }
+    
+    private func calculateAzimuth() -> Int? {
+        let validLetters = letterInputs.filter { !$0.isEmpty }
+        guard validLetters.count == 3 else { return nil }
+        var value = 0
+        for (idx, letter) in letterInputs.enumerated() {
+            guard let numStr = alphabetViewModel.letterNumbers[letter.uppercased()],
+                  let num = Int(numStr) else { return nil }
+            value += num * Int(pow(10.0, Double(2 - idx)))
+        }
+        return value % 360
+    }
+    
+    private func calculateDistance() -> Int? {
+        let validLetters = distanceInputs.filter { !$0.isEmpty }
+        guard validLetters.count == 3 else { return nil }
+        var value = 0
+        for (idx, letter) in distanceInputs.enumerated() {
+            guard let numStr = alphabetViewModel.letterNumbers[letter.uppercased()],
+                  let num = Int(numStr) else { return nil }
+            value += num * Int(pow(10.0, Double(idx)))
+        }
+        return value
     }
     
     func startCompassIfActive() {
@@ -165,139 +229,24 @@ class CompassViewModel: ObservableObject {
         locationService.stopUpdatingHeading()
     }
     
-    private func moveToNextField(from currentIndex: Int, isDistance: Bool) {
-        if isDistance {
-            if currentIndex > 0 {
-                focusedIndex = currentIndex + 3 - 1
-            } else {
-                focusedIndex = nil
-            }
+    func toggleCompass() {
+        if locationService.isActive {
+            locationService.stopUpdatingHeading()
         } else {
-            if currentIndex < 2 {
-                focusedIndex = currentIndex + 1
-            } else {
-                focusedIndex = 3 + 2
-            }
+            locationService.startUpdatingHeading()
         }
-    }
-    
-    private func updateCompassData() {
-        let azimuthCode = calculateAzimuthCode()
-        let azimuth = calculateAzimuth(from: azimuthCode)
-        let distanceCode = calculateDistanceCode()
-        let distance = calculateDistance(from: distanceCode)
-        
-        compassData = CompassData(
-            azimuth: azimuth,
-            distance: distance,
-            deviceHeading: locationService.heading,
-            azimuthText: azimuthCode == "___" ? "___" : azimuthCode,
-            distanceText: distanceCode == "___" ? "___" : distanceCode
-        )
-    }
-    
-    private func calculateAzimuthCode() -> String {
-        var code = ""
-        for letter in letterInputs {
-            if letter.isEmpty {
-                code += "_"
-            } else {
-                let upperLetter = letter.uppercased()
-                if let numberValue = alphabetViewModel.letterNumbers[upperLetter] {
-                    code += numberValue
-                } else {
-                    code += "_"
-                }
-            }
-        }
-        return code
-    }
-    
-    private func calculateAzimuth(from code: String) -> Int? {
-        if code == "___" { return nil }
-        if code == "__" + String(code.last!), let d = Int(String(code.last!)) {
-            return d % 360
-        }
-        if code.first == "_", code[code.index(code.startIndex, offsetBy: 1)] != "_", code.last! != "_",
-           let d1 = Int(String(code[code.index(code.startIndex, offsetBy: 1)])),
-           let d2 = Int(String(code.last!)) {
-            return (d1 * 10 + d2) % 360
-        }
-        if !code.contains("_"),
-           let d0 = Int(String(code.first!)),
-           let d1 = Int(String(code[code.index(code.startIndex, offsetBy: 1)])),
-           let d2 = Int(String(code.last!)) {
-            return (d0 * 100 + d1 * 10 + d2) % 360
-        }
-        return nil
-    }
-    
-    private func calculateDistanceCode() -> String {
-        return distanceInputs
-            .reversed()
-            .map { letter in
-                if letter.isEmpty {
-                    return "_"
-                } else {
-                    let upperLetter = letter.uppercased()
-                    if let numberValue = alphabetViewModel.letterNumbers[upperLetter] {
-                        return numberValue
-                    }
-                    return "_"
-                }
-            }
-            .joined()
-    }
-    
-    private func calculateDistance(from code: String) -> Int? {
-        if code.contains("_") { return nil }
-        return Int(code)
-    }
-    
-    func recalculateCompassData() {
-        updateCompassData()
         objectWillChange.send()
     }
     
-    func reloadDataForSnapshot(id: String?, letterInputs: [String], distanceInputs: [String]) {
-        isLoadingSnapshot = true
-        lastLoadedLetterInputs = letterInputs
-        lastLoadedDistanceInputs = distanceInputs
-        DispatchQueue.main.async {
-            self.letterInputs = letterInputs
-            self.distanceInputs = distanceInputs
-            self.objectWillChange.send()
-            self.updateCompassData()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.isLoadingSnapshot = false
-            }
-        }
+    func dismissFocus() {
+        focusedIndex = nil
     }
     
-    @objc private func handleCompassDataReset(_ notification: Notification) {
-        isLoadingSnapshot = true
-        DispatchQueue.main.async {
-            self.letterInputs = ["", "", ""]
-            self.distanceInputs = ["", "", ""]
-            self.lastLoadedLetterInputs = ["", "", ""]
-            self.lastLoadedDistanceInputs = ["", "", ""]
-            self.updateCompassData()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.isLoadingSnapshot = false
-            }
-        }
+    func showClearConfirmation() {
+        showingClearConfirmation = true
     }
     
-    private func saveCurrentDataToSnapshot() {
-        guard let snapshotID = currentSnapshotID, !isLoadingSnapshot else { return }
-        NotificationCenter.default.post(
-            name: Notification.Name("CompassDataChanged"),
-            object: nil,
-            userInfo: [
-                "letterInputs": letterInputs,
-                "distanceInputs": distanceInputs,
-                "snapshotID": snapshotID
-            ]
-        )
+    deinit {
+        cancellables.forEach { $0.cancel() }
     }
 }

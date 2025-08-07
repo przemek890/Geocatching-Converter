@@ -23,7 +23,7 @@ struct ContentView: View {
                 }
                 .tag(1)
                 
-            CompassView(alphabetViewModel: alphabetViewModel)
+            CompassView(alphabetViewModel: alphabetViewModel, settingsViewModel: settingsViewModel)
                 .tabItem {
                     Image(systemName: "location.north.line")
                     Text("Compass")
