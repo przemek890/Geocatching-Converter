@@ -28,12 +28,11 @@ struct LockView: View {
         .onAppear {
             viewModel.loadInitialData()
         }
-        .onChange(of: viewModel.lockDigits) { _ in
+        .onChange(of: viewModel.lockDigits) {
             viewModel.resetInputs()
         }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                // Sprawdź czy wartość w viewModel jest zgodna z ustawieniami
+        .onChange(of: scenePhase) {
+            if scenePhase == .active {
                 if viewModel.lockDigits != viewModel.settingsViewModel.lockDigits {
                     viewModel.updateLockDigits(viewModel.settingsViewModel.lockDigits)
                 }
@@ -80,11 +79,11 @@ struct LockContentView: View {
                 secondaryButton: .cancel(Text("Cancel"))
             )
         }
-        .onChange(of: viewModel.focusedIndex) { newValue in
-            focusedField = newValue
+        .onChange(of: viewModel.focusedIndex) { 
+            focusedField = viewModel.focusedIndex
         }
-        .onChange(of: focusedField) { newValue in
-            viewModel.focusedIndex = newValue
+        .onChange(of: focusedField) { 
+            viewModel.focusedIndex = focusedField
         }
     }
 }

@@ -90,15 +90,15 @@ struct AlphabetConfigView: View {
             }
             }
         }
-        .onChange(of: activeSheet) { new in
+        .onChange(of: activeSheet) { _ , new in
             if new == nil {
                 viewerImage = nil
             }
         }
-        .onChange(of: letterImages) { _ in
+        .onChange(of: letterImages) { _ , _ in
             onSave()
         }
-        .onChange(of: letterNumbers) { _ in
+        .onChange(of: letterNumbers) { _ , _ in
             onSave()
         }
         .onAppear { }

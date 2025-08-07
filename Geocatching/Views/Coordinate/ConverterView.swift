@@ -51,12 +51,12 @@ struct ConverterView: View {
             precacheImages()
             setupOnAppear()
         }
-        .onChange(of: coordinateViewModel.fromFormat) { _ in
+        .onChange(of: coordinateViewModel.fromFormat) {
             coordinateViewModel.convert()
         }
-        .onChange(of: coordinateViewModel.toFormat) { _ in
+        .onChange(of: coordinateViewModel.toFormat) {
             withAnimation(.easeInOut(duration: 0.2)) {
-                coordinateViewModel.convert()
+            coordinateViewModel.convert()
             }
         }
         .sheet(isPresented: $showingImageViewer) {

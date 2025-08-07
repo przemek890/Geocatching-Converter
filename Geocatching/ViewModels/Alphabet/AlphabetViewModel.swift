@@ -34,23 +34,30 @@ class AlphabetViewModel: ObservableObject {
         if isLoadingFromSnapshot { return }
         isLoadingFromSnapshot = true
         currentSnapshotID = snapshotID
-        letterNumbers.removeAll()
-        letterImages.removeAll()
-        let key = "letterData_\(selectedAlphabet)_\(snapshotID)"
-        if let numbersData = UserDefaults.standard.data(forKey: "\(key)_numbers"),
-           let numbers = try? JSONDecoder().decode([String: String].self, from: numbersData) {
-            letterNumbers = numbers
-        }
-        if let pathsData = UserDefaults.standard.data(forKey: "\(key)_images"),
-           let imagePaths = try? JSONDecoder().decode([String: String].self, from: pathsData) {
-            for (letter, filename) in imagePaths {
-                let url = imageFileURL(for: letter, snapshotID: snapshotID)
-                if let data = try? Data(contentsOf: url) {
-                    letterImages[letter] = data
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            var loadedNumbers: [String: String] = [:]
+            var loadedImages: [String: Data] = [:]
+            let key = "letterData_\(self.selectedAlphabet)_\(snapshotID)"
+            if let numbersData = UserDefaults.standard.data(forKey: "\(key)_numbers"),
+               let numbers = try? JSONDecoder().decode([String: String].self, from: numbersData) {
+                loadedNumbers = numbers
+            }
+            if let pathsData = UserDefaults.standard.data(forKey: "\(key)_images"),
+               let imagePaths = try? JSONDecoder().decode([String: String].self, from: pathsData) {
+                for (letter, _) in imagePaths {
+                    let url = self.imageFileURL(for: letter, snapshotID: snapshotID)
+                    if let data = try? Data(contentsOf: url) {
+                        loadedImages[letter] = data
+                    }
                 }
             }
+            DispatchQueue.main.async {
+                self.letterNumbers = loadedNumbers
+                self.letterImages = loadedImages
+                self.isLoadingFromSnapshot = false
+            }
         }
-        isLoadingFromSnapshot = false
     }
     
     func saveLetterData(forSnapshotID snapshotID: String) {
@@ -66,6 +73,7 @@ class AlphabetViewModel: ObservableObject {
                 try data.write(to: url)
                 imagePaths[letter] = url.lastPathComponent
             } catch {
+                print("Failed to write image for letter \(letter): \(error)")
             }
         }
         if let pathsData = try? JSONEncoder().encode(imagePaths) {

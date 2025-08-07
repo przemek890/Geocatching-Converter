@@ -48,7 +48,7 @@ struct CoordinateInputView: View {
         .onAppear {
             updateTextFields()
         }
-        .onChange(of: format) { _ in
+        .onChange(of: format) { oldValue, newValue in
             updateTextFields()
         }
     }
@@ -63,7 +63,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.numberPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .degrees)
-                .onChange(of: degreesText) { _ in
+                .onChange(of: degreesText) { oldValue, newValue in
                     updateCoordinateFromDD()
                 }
             
@@ -78,7 +78,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.numberPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .decimal)
-                .onChange(of: decimalText) { _ in
+                .onChange(of: decimalText) { oldValue, newValue in
                     updateCoordinateFromDD()
                 }
                 .onSubmit {
@@ -97,7 +97,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.numberPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .degrees)
-                .onChange(of: degreesText) { _ in
+                .onChange(of: degreesText) { oldValue, newValue in
                     updateCoordinateFromDDM()
                 }
             
@@ -108,7 +108,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.decimalPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .decimalMinutes)
-                .onChange(of: decimalMinutesText) { newValue in
+                .onChange(of: decimalMinutesText) { oldValue, newValue in
                     if !newValue.contains(".") && newValue.count > 2 {
                         let firstTwo = String(newValue.prefix(2))
                         let rest = String(newValue.dropFirst(2))
@@ -132,7 +132,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.numberPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .degrees)
-                .onChange(of: degreesText) { _ in
+                .onChange(of: degreesText) { oldValue, newValue in
                     updateCoordinateFromDMS()
                 }
             
@@ -143,7 +143,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.numberPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .minutes)
-                .onChange(of: minutesText) { _ in
+                .onChange(of: minutesText) { oldValue, newValue in
                     updateCoordinateFromDMS()
                 }
             
@@ -154,7 +154,7 @@ struct CoordinateInputView: View {
                 .keyboardType(.numberPad)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .focused($focusedField, equals: .seconds)
-                .onChange(of: secondsText) { _ in
+                .onChange(of: secondsText) { oldValue, newValue in
                     updateCoordinateFromDMS()
                 }
                 .onSubmit {

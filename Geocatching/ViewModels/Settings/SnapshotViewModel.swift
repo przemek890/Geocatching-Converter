@@ -128,7 +128,7 @@ class SnapshotViewModel: ObservableObject {
     }
     
     private func loadSnapshot(_ snapshot: SettingsSnapshot) async {
-        await settingsViewModel.loadSnapshot(
+        settingsViewModel.loadSnapshot(
             snapshot,
             alphabetViewModel: alphabetViewModel,
             coordinateViewModel: coordinateViewModel

@@ -74,7 +74,7 @@ struct HistorySettingsSection: View {
                         if let name = selectedHistoryName {
                             if let snapshot = settingsViewModel.getSnapshots().first(where: { $0.name == name }) {
                                 Task {
-                                    await settingsViewModel.loadSnapshot(
+                                    settingsViewModel.loadSnapshot(
                                         snapshot,
                                         alphabetViewModel: alphabetViewModel,
                                         coordinateViewModel: coordinateViewModel
@@ -92,7 +92,7 @@ struct HistorySettingsSection: View {
                     Button("Cancel", role: .cancel) { }
                     Button("Delete", role: .destructive) {
                         if let name = selectedHistoryName {
-                            if let snapshot = settingsViewModel.getSnapshots().first(where: { $0.name == name }) {
+                            if settingsViewModel.getSnapshots().contains(where: { $0.name == name }) {
                                 settingsViewModel.deleteSettings(withName: name)
                             }
                         }

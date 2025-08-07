@@ -41,10 +41,10 @@ struct CompassView: View {
         .onDisappear {
             viewModel.stopCompass()
         }
-        .onChange(of: viewModel.focusedIndex) { newValue in
+        .onChange(of: viewModel.focusedIndex) { _ , newValue in
             focusedIndex = newValue
         }
-        .onChange(of: focusedIndex) { newValue in
+        .onChange(of: focusedIndex) { _ , newValue in
             viewModel.focusedIndex = newValue
         }
         .alert(isPresented: $viewModel.showingClearConfirmation) {
