@@ -22,21 +22,24 @@ struct ContentView: View {
                     Text("Lock")
                 }
                 .tag(1)
-
+                
             CompassView(alphabetViewModel: alphabetViewModel)
                 .tabItem {
                     Image(systemName: "location.north.line")
                     Text("Compass")
                 }
                 .tag(2)
-
-            AlphabetConfigTabView(alphabetViewModel: alphabetViewModel)
+                
+            AlphabetConfigTabView(
+                alphabetViewModel: alphabetViewModel,
+                snapshotID: settingsViewModel.currentSnapshotID ?? ""
+            )
                 .tabItem {
                     Image(systemName: "textformat.abc")
                     Text("Alphabet")
                 }
                 .tag(3)
-
+                
             SettingsView(
                 settingsViewModel: settingsViewModel,
                 alphabetViewModel: alphabetViewModel,

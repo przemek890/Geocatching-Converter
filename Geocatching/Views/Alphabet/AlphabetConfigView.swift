@@ -1,49 +1,5 @@
 import SwiftUI
 
-enum ActiveSheet: Identifiable {
-    case photoPicker, galleryPicker, cameraPicker, imageViewer
-    var id: Int { hashValue }
-}
-
-struct ActionSheetPhotoSource: View {
-    @Environment(\.dismiss) private var dismiss
-    let onSelect: (UIImagePickerController.SourceType) -> Void
-
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Choose photo source")
-                .font(.headline)
-                .padding(.top, 24)
-
-            Button {
-                onSelect(.camera)
-                dismiss()
-            } label: {
-                Label("Camera", systemImage: "camera")
-                    .font(.title2)
-            }
-            .padding()
-
-            Button {
-                onSelect(.photoLibrary)
-                dismiss()
-            } label: {
-                Label("Gallery", systemImage: "photo")
-                    .font(.title2)
-            }
-            .padding()
-
-            Button("Cancel") {
-                dismiss()
-            }
-            .foregroundColor(.red)
-            .padding(.bottom, 24)
-        }
-        .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-    }
-}
-
 struct AlphabetConfigView: View {
     let alphabet: [String]
     @Binding var letterNumbers: [String: String]
@@ -61,7 +17,7 @@ struct AlphabetConfigView: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(alphabet, id: \.self) { letter in
-                    LetterCardView(
+                    LetterCard(
                         letter: letter,
                         number: Binding(
                             get: { letterNumbers[letter] ?? "" },
@@ -91,33 +47,47 @@ struct AlphabetConfigView: View {
         .sheet(item: $activeSheet) { item in
             switch item {
             case .photoPicker:
-                ActionSheetPhotoSource(onSelect: { source in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        activeSheet = (source == .camera ? .cameraPicker : .galleryPicker)
-                    }
-                })
+            ActionSheetPhotoSource(onSelect: { source in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                activeSheet = (source == .camera ? .cameraPicker : .galleryPicker)
+                }
+            })
             case .galleryPicker:
-                ImagePicker(sourceType: .photoLibrary) { img in
-                    saveImage(for: selectedLetter, img)
-                    selectedLetter = ""
-                }
+            ImagePicker(sourceType: .photoLibrary) { img in
+                saveImage(for: selectedLetter, img)
+                selectedLetter = ""
+            }
             case .cameraPicker:
-                ImagePicker(sourceType: .camera) { img in
-                    saveImage(for: selectedLetter, img)
-                    selectedLetter = ""
-                }
+            ImagePicker(sourceType: .camera) { img in
+                saveImage(for: selectedLetter, img)
+                selectedLetter = ""
+            }
             case .imageViewer:
-                if let img = viewerImage {
-                    CustomImageViewerView(
-                        image: img,
-                        letter: selectedLetter,
-                        showTrashIcon: true,
-                        onDelete: {
-                            letterImages[selectedLetter] = nil
-                            activeSheet = nil
-                        }
-                    )
+            if let data = letterImages[selectedLetter], let img = UIImage(data: data) {
+                if img.size.width > 0 && img.size.height > 0 {
+                CustomImageViewer(
+                    image: img,
+                    letter: selectedLetter,
+                    showTrashIcon: true,
+                    onDelete: {
+                    letterImages[selectedLetter] = nil
+                    onSave()
+                    activeSheet = nil
+                    }
+                )
+                } else {
+                VStack {
+                    Text("Invalid image for letter \(selectedLetter)")
+                    Button("Close") {
+                    activeSheet = nil
+                    }
+                    .padding()
                 }
+                }
+            } else {
+                Text("Cannot load image")
+                .padding()
+            }
             }
         }
         .onChange(of: activeSheet) { new in
