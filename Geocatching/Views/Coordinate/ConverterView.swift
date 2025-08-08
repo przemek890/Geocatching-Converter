@@ -106,7 +106,6 @@ private extension ConverterView {
                 .font(.headline)
                 .fontWeight(.semibold)
                 .padding(.top, 20)
-                .padding(.bottom, 10)
 
             HStack {
                 Spacer()
@@ -119,6 +118,7 @@ private extension ConverterView {
                         .frame(width: 32, height: 32)
                 }
                 .padding(.trailing, 28)
+                .padding(.top, 10)
             }
         }
     }
@@ -131,14 +131,8 @@ private extension ConverterView {
                 .frame(width: 75, height: 75)
                 .cornerRadius(18)
                 .shadow(color: .primary.opacity(0.2), radius: 3, x: 0, y: 2)
-
-            Text("Geocatching")
-                .font(.title2)
-                .fontWeight(.bold)
-            Text("Coordinate Converter")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
         }
+        .padding(.bottom, 20)
     }
     
     var alphabetScrollView: some View {
@@ -154,6 +148,21 @@ private extension ConverterView {
                             ) {
                                 handleLetterSelection(letter: letter)
                             }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(
+                                        selectedLetter == letter
+                                            ? Color.accentColor
+                                            : Color(UIColor.systemGray4),
+                                        lineWidth: selectedLetter == letter ? 3 : 1
+                                    )
+                                    .shadow(
+                                        color: selectedLetter == letter
+                                            ? (Color.accentColor.opacity(0.7))
+                                            : Color.clear,
+                                        radius: selectedLetter == letter ? 6 : 0
+                                    )
+                            )
                         }
                     }
                     .padding(.horizontal, 16)
@@ -164,7 +173,7 @@ private extension ConverterView {
                 Text("No letters configured")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .padding(.vertical, 10)
+                    .padding(.bottom, 15)
             }
         }
     }

@@ -266,7 +266,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Geocatching/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_CFBundleDisplayName = GeoTrail;
 				INFOPLIST_KEY_LSApplicationCategoryType = NSCameraUsageDescription;
 				INFOPLIST_KEY_NSCameraUsageDescription = "The camera is used to take photos of letters for coordinate mapping";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "The photo library is used to select and save images of letters for coordinate mapping";
@@ -310,7 +310,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Geocatching/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_CFBundleDisplayName = GeoTrail;
 				INFOPLIST_KEY_LSApplicationCategoryType = NSCameraUsageDescription;
 				INFOPLIST_KEY_NSCameraUsageDescription = "The camera is used to take photos of letters for coordinate mapping";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "The photo library is used to select and save images of letters for coordinate mapping";
