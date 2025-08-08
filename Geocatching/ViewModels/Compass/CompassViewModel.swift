@@ -178,33 +178,36 @@ class CompassViewModel: ObservableObject {
         updateCompassData()
     }
     
-    private func updateCompassData() {
-        let azimuth = calculateAzimuth()
-        let distance = calculateDistance()
-        
-        compassData = CompassData(
-            azimuth: azimuth,
-            distance: distance,
-            deviceHeading: locationService.heading,
-            azimuthText: azimuth != nil ? "\(azimuth!)°" : "___",
-            distanceText: distance != nil ? "\(distance!)" : "___"
-        )
-    }
-    
-    func recalculateCompassData() {
-        updateCompassData()
-    }
-    
     private func calculateAzimuth() -> Int? {
         let validLetters = letterInputs.filter { !$0.isEmpty }
         guard validLetters.count == 3 else { return nil }
         var value = 0
-        for (idx, letter) in letterInputs.enumerated() {
+        for (idx , letter) in letterInputs.enumerated() {
             guard let numStr = alphabetViewModel.letterNumbers[letter.uppercased()],
                   let num = Int(numStr) else { return nil }
             value += num * Int(pow(10.0, Double(2 - idx)))
         }
         return value % 360
+    }
+    
+    private func calculatePartialAzimuth() -> String {
+        var result = ""
+        for (_ , letter) in letterInputs.enumerated() {
+            if letter.isEmpty {
+                result += "_"
+            } else if let numStr = alphabetViewModel.letterNumbers[letter.uppercased()],
+                      let num = Int(numStr) {
+                result += String(num)
+            } else {
+                result += "_"
+            }
+        }
+        
+        if !result.contains("_"), let value = Int(result) {
+            return String(value % 360)
+        }
+        
+        return result
     }
     
     private func calculateDistance() -> Int? {
@@ -217,6 +220,37 @@ class CompassViewModel: ObservableObject {
             value += num * Int(pow(10.0, Double(idx)))
         }
         return value
+    }
+    
+    private func calculatePartialDistance() -> String {
+        var digits = ["_", "_", "_"]
+        for (idx, letter) in distanceInputs.enumerated() {
+            if !letter.isEmpty,
+               let numStr = alphabetViewModel.letterNumbers[letter.uppercased()],
+               let num = Int(numStr) {
+                digits[2-idx] = String(num)
+            }
+        }
+        return digits.joined()
+    }
+    
+    private func updateCompassData() {
+        let azimuth = calculateAzimuth()
+        let distance = calculateDistance()
+        let azimuthText = calculatePartialAzimuth()
+        let distanceText = calculatePartialDistance()
+        
+        compassData = CompassData(
+            azimuth: azimuth,
+            distance: distance,
+            deviceHeading: locationService.heading,
+            azimuthText: azimuth != nil ? "\(azimuth!)°" : "\(azimuthText)°",
+            distanceText: distance != nil ? "\(distance!)" : distanceText
+        )
+    }
+    
+    func recalculateCompassData() {
+        updateCompassData()
     }
     
     func startCompassIfActive() {
