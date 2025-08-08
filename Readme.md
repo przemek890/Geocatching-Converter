@@ -4,7 +4,9 @@ Geocatching Converter is an app for collecting letter codes and calculating the 
 - Automatic conversion of letters to numbers based on your selected alphabet.
 - Calculate azimuth and distance to next points.
 - Add notes and letter photos for easier solving.
-- Supports various coordinate formats and export to maps.
+- Share your results and export coordinates directly to maps.
+- Supports various coordinate formats.
+- Save current trail settings in isolated snapshots
 
 <p float="left">
     <img src="Doc/1.PNG" width="300" alt="Main screen" style="border:2px solid black;"/>
