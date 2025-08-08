@@ -1,4 +1,4 @@
-Geocatching Converter is an app for collecting letter codes and calculating the final coordinates in geocaching trail caches.
+In this app you can:
 
 - Enter letter codes from trail stages.
 - Automatic conversion of letters to numbers based on your selected alphabet.
